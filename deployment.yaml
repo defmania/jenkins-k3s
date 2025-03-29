@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jenkins-deployment
+  labels:
+    name: jenkins
+  namespace: jenkins
+spec:
+  selector:
+    matchLabels:
+      app: jenkins-pod
+  replicas: 1
+  template:
+    metadata:
+      name: jenkins-pod
+      labels:
+        app: jenkins-pod
+    spec:
+      containers:
+        - name: deployment-jenkins
+          image: jenkins/jenkins:lts
+          # resources:
+          #   limits:
+          #     memory: "0.5Gi"
+          #     cpu: "250m"
+          #   requests:
+          #     memory: "0.25Gi"
+          #     cpu: "125m"
+          ports:
+            - name: http-port
+              containerPort: 8080
+            - name: jnlp-port
+              containerPort: 50000
+          livenessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: "/login"
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data-jenkins
+              mountPath: /var/jenkins_home
+      volumes:
+        - name: data-jenkins
+          persistentVolumeClaim:
+            claimName: pvc-jenkins
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
